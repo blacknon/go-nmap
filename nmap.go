@@ -1,18 +1,20 @@
 package nmap
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"os/exec"
-	"bytes"
+
 	"github.com/pkg/errors"
-	"encoding/xml"
 )
 
 type Nmap struct {
 	SystemPath string
+	Debug      bool
 	Args       []string
 	Ports      string
-	Hosts      string
+	Hosts      []string
 	Exclude    string
 	Result     []byte
 }
@@ -28,7 +30,7 @@ func (n *Nmap) SetArgs(arg ...string) {
 func (n *Nmap) SetPorts(ports string) {
 	n.Ports = ports
 }
-func (n *Nmap) SetHosts(hosts string) {
+func (n *Nmap) SetHosts(hosts []string) {
 	n.Hosts = hosts
 }
 
@@ -42,8 +44,8 @@ func (n *Nmap) Run() error {
 		outb, errs bytes.Buffer
 	)
 
-	if n.Hosts != "" {
-		n.Args = append(n.Args, n.Hosts)
+	if len(n.Hosts) > 0 {
+		n.Args = append(n.Args, n.Hosts...)
 	}
 
 	if n.Ports != "" {
@@ -59,8 +61,12 @@ func (n *Nmap) Run() error {
 	n.Args = append(n.Args, "-oX")
 	n.Args = append(n.Args, "-")
 
-	cmd = exec.Command(n.SystemPath, n.Args ...)
-	fmt.Println(cmd.Args)
+	cmd = exec.Command(n.SystemPath, n.Args...)
+
+	if n.Debug {
+		fmt.Println(cmd.Args)
+	}
+
 	cmd.Stdout = &outb
 	cmd.Stderr = &errs
 	err := cmd.Run()
